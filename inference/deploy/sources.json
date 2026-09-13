@@ -1,0 +1,7 @@
+{
+  "version": "veil.deployment-sources.v2",
+  "nvat": {"repository": "https://github.com/NVIDIA/attestation-sdk.git", "revision": "73efa3ac1bec28ed7d7f0c0811a6c993e722dbd4"},
+  "guest_components": {"repository": "https://github.com/confidential-containers/guest-components.git", "revision": "eae0bf63a3a9db7721f86e0a2b0b9941a7fcba3a", "features": ["bin", "tdx-attester"]},
+  "trustee_protocol": {"repository": "https://github.com/confidential-containers/trustee.git", "revision": "512fed65642015b849f38fb13bfdec7806639987"},
+  "profile": "Intel TDX, Linux TSM reports, one Hopper H100 GPU, NRAS 3.0, Trustee EAR"
+}

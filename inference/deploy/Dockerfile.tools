@@ -1,0 +1,26 @@
+# Build from the repository root. Supply approved amd64 image digests for all bases.
+ARG NODE_IMAGE
+ARG RUST_IMAGE
+ARG UBUNTU_IMAGE
+FROM ${NODE_IMAGE} AS node
+FROM ${RUST_IMAGE} AS rust
+FROM ${UBUNTU_IMAGE} AS build
+USER root
+COPY --from=rust /usr/local/cargo /usr/local/cargo
+COPY --from=rust /usr/local/rustup /usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo RUSTUP_HOME=/usr/local/rustup PATH=/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git cmake make g++ clang pkg-config libcurl4-openssl-dev libssl-dev libxml2-dev libxmlsec1-dev libxmlsec1-openssl zlib1g-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
+RUN git init nvat && cd nvat && git remote add origin https://github.com/NVIDIA/attestation-sdk.git && git fetch --depth=1 origin 73efa3ac1bec28ed7d7f0c0811a6c993e722dbd4 && git checkout --detach FETCH_HEAD
+RUN cmake -S nvat/nv-attestation-cli -B nvat-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/nvat -DUSE_SYSTEM_DEPS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ && cmake --build nvat-build --parallel 4 && cmake --install nvat-build
+COPY inference/deploy/gpu-cc-check.c /build/gpu-cc-check.c
+RUN clang -O2 -Wall -Wextra -Werror /build/gpu-cc-check.c -ldl -o /opt/nvat/bin/veil-gpu-cc-check
+RUN git init guest && cd guest && git remote add origin https://github.com/confidential-containers/guest-components.git && git fetch --depth=1 origin eae0bf63a3a9db7721f86e0a2b0b9941a7fcba3a && git checkout --detach FETCH_HEAD
+RUN cargo build --manifest-path guest/Cargo.toml --locked --release -p attester --no-default-features --features bin,tdx-attester --bin evidence_getter && install -m 0755 guest/target/release/evidence_getter /opt/nvat/bin/evidence_getter
+FROM ${UBUNTU_IMAGE}
+USER root
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=build /opt/nvat /opt/nvat
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4t64 libssl3t64 libxml2 libxmlsec1t64 libxmlsec1t64-openssl zlib1g mount && rm -rf /var/lib/apt/lists/*
+ENV LD_LIBRARY_PATH=/opt/nvat/lib:/opt/nvat/lib64
+RUN /opt/nvat/bin/nvattest --help >/dev/null && /opt/nvat/bin/evidence_getter --help >/dev/null && node --version

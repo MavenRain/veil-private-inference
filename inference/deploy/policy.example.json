@@ -1,0 +1,17 @@
+{
+  "version": "veil.inference-policy.v2",
+  "audience": "veil-inference",
+  "model": "REPLACE_WITH_MODEL_MANIFEST_DIGEST",
+  "runtime": "nim",
+  "max_age_seconds": 600,
+  "gpu_measurement": "REPLACE_WITH_APPROVED_GPU_CLAIM_BUNDLE_DIGEST",
+  "gpu": {
+    "issuer": "https://nras.attestation.nvidia.com",
+    "keys": [],
+    "hwmodel": "GH100 A01",
+    "driver": "REPLACE_WITH_APPROVED_DRIVER_VERSION",
+    "vbios": "REPLACE_WITH_APPROVED_VBIOS_VERSION"
+  },
+  "cpu": {"keys": [], "policy_id": "veil-tdx-v2", "init_data": "REPLACE_WITH_FINAL_TDX_INIT_DATA_DIGEST"},
+  "zk": {"required": true, "verification_key_sha256": "REPLACE_WITH_RELEASE_VERIFICATION_KEY_DIGEST"}
+}

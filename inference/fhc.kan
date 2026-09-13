@@ -1,0 +1,10 @@
+-- A typed encrypted square, the depth-one multiplication in the BFV circuit.
+-- Key implementation and BFV vector packing belong to the TenSEAL host.
+axiom ReceiptPublicKey : Type
+axiom ReceiptSecretKey : Type
+axiom receiptPublicKey : ReceiptPublicKey
+
+def receiptSeal (x : Nat) : fhc 0 Nat := enc receiptPublicKey x
+def receiptSquare (x : Nat) : Nat := natMul x x
+def receiptEncryptedSquare (c : fhc 0 Nat) : fhc 1 Nat := eval receiptSquare c
+def receiptOpen (1 key : ReceiptSecretKey) (c : fhc 1 Nat) : Nat := dec key c

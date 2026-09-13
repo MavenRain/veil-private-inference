@@ -1,0 +1,80 @@
+-- Link after runtime/reactor.kan and relation.kan.
+-- Distinct wrapper families prevent swapping model, prompt and output handles.
+mu ModelHash : Type 0 with
+| modelHash : Nat -> ModelHash
+
+mu PromptCommitment : Type 0 with
+| promptCommitment : Nat -> PromptCommitment
+
+mu OutputCommitment : Type 0 with
+| outputCommitment : Nat -> OutputCommitment
+
+mu GpuMeasurement : Type 0 with
+| gpuMeasurement : Nat -> GpuMeasurement
+
+mu WorkloadMeasurement : Type 0 with
+| workloadMeasurement : Nat -> WorkloadMeasurement
+
+mu ReceiptDigest : Type 0 with
+| receiptDigest : Nat -> ReceiptDigest
+
+-- The JS adapter supplies exactly 32 bytes for digests and 8 bytes for time.
+-- Read little-endian bytes into arbitrary-precision Nat without a JS Number.
+def rec receiptReadNat : Bytes -> Nat := fun (bytes : Bytes) =>
+  case bytes as b in Bytes return Nat with
+  | bytesNil => 0
+  | bytesCons head tail => natAdd head (natMul 256 (receiptReadNat tail))
+
+def makeModelHash (bytes : Bytes) : ModelHash := modelHash (receiptReadNat bytes)
+def makePromptCommitment (bytes : Bytes) : PromptCommitment := promptCommitment (receiptReadNat bytes)
+def makeOutputCommitment (bytes : Bytes) : OutputCommitment := outputCommitment (receiptReadNat bytes)
+def makeGpuMeasurement (bytes : Bytes) : GpuMeasurement := gpuMeasurement (receiptReadNat bytes)
+def makeWorkloadMeasurement (bytes : Bytes) : WorkloadMeasurement := workloadMeasurement (receiptReadNat bytes)
+def makeReceiptDigest (bytes : Bytes) : ReceiptDigest := receiptDigest (receiptReadNat bytes)
+
+def modelValue (m : ModelHash) : Nat := case m as z in ModelHash return Nat with | modelHash n => n
+def promptValue (p : PromptCommitment) : Nat := case p as z in PromptCommitment return Nat with | promptCommitment n => n
+def outputValue (o : OutputCommitment) : Nat := case o as z in OutputCommitment return Nat with | outputCommitment n => n
+def gpuValue (g : GpuMeasurement) : Nat := case g as z in GpuMeasurement return Nat with | gpuMeasurement n => n
+def workloadValue (v : WorkloadMeasurement) : Nat := case v as z in WorkloadMeasurement return Nat with | workloadMeasurement n => n
+def digestValue (d : ReceiptDigest) : Nat := case d as z in ReceiptDigest return Nat with | receiptDigest n => n
+
+def makeReceipt (m : ModelHash) (p : PromptCommitment) (o : OutputCommitment) : ReceiptFields :=
+  tuple (modelValue m, promptValue p, outputValue o)
+
+def makeReceiptPolicy (m : ModelHash) (g : GpuMeasurement) (v : WorkloadMeasurement)
+    (runtime : Nat) (maxAge : Bytes) : ReceiptPolicy :=
+  tuple (modelValue m, gpuValue g, workloadValue v, runtime, receiptReadNat maxAge)
+
+def makeReceiptContext (nonce now : Bytes) : ReceiptContext :=
+  tuple (receiptReadNat nonce, receiptReadNat now)
+
+def makeReceiptInstance (r : ReceiptFields) (p : ReceiptPolicy) (c : ReceiptContext) : ReceiptInstance :=
+  tuple (r, p, c)
+
+def makeGpuClaims (g : GpuMeasurement) (nonce : Bytes) (attested cc debug : Nat) : GpuClaims :=
+  tuple (gpuValue g, receiptReadNat nonce, attested, cc, debug)
+
+def makeWorkloadClaims (r : ReceiptFields) (g : GpuMeasurement) (v : WorkloadMeasurement)
+    (nonce : Bytes) (runtime completed vmAttested vmConfidential vmDebug : Nat) : WorkloadClaims :=
+  tuple (r.0, r.1, r.2, gpuValue g, workloadValue v, receiptReadNat nonce,
+    runtime, completed, vmAttested, vmConfidential, vmDebug)
+
+def makeTokenLifetime (issued notBefore expires : Bytes) : TokenLifetime :=
+  tuple (receiptReadNat issued, receiptReadNat notBefore, receiptReadNat expires)
+
+def makeReceiptEvidence (authenticated : Nat) (g : GpuClaims) (v : WorkloadClaims)
+    (t : TokenLifetime) : ReceiptEvidence := tuple (authenticated, g, v, t)
+
+-- Use veil's existing plaintext slot twin to bind the full SHA-256 instance
+-- and authenticated envelope digests. The complete relation runs in Wasm.
+def provePlainReceipt (instance evidence : ReceiptDigest) : Slot :=
+  zkProve (digestValue instance) (digestValue evidence)
+
+def verifyPlainReceipt (proof : Slot) (instance evidence : ReceiptDigest)
+    (x : ReceiptInstance) (w : ReceiptEvidence) : Nat :=
+  let relation : Nat -> Nat -> ReceiptBool := fun (i e : Nat) =>
+    case (natEq e (digestValue evidence)) as same return ReceiptBool with
+    | 0 (f : prod ()) => natEq 0 1
+    | 1 (t : prod ()) => receiptHolds x w in
+  zkVerify proof (digestValue instance) relation

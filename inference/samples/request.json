@@ -1,0 +1,7 @@
+{
+  "model": "REPLACE_WITH_PINNED_MODEL_ID",
+  "stream": false,
+  "messages": [{"role": "user", "content": "Reply with a short greeting."}],
+  "max_tokens": 32,
+  "temperature": 0
+}

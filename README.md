@@ -6,6 +6,12 @@ veil is kanon plus three host shapes for private computation: `SZk`
 the plaintext reactor twins in [REACTOR.md](REACTOR.md).  The trusted
 kernel bound is 5250 lines.
 
+The [private inference receipt release](inference/README.md) includes an encrypted
+inference protocol, NVAT and Trustee adapters, real PLONK and BFV backends,
+NVFlare HE/DP rounds, and a confidential-container deployment package.
+The [plaintext milestone](examples/private-inference/README.md) checks mocked
+attestation without a GPU. Hardware acceptance is a separate deployment step.
+
 The plaintext proof runtime checks that verification uses the instance
 stored by `zkProve`, as well as checking the supplied relation. The
 [instance-binding validation](dev/ZK-INSTANCE.md) covers both runtime twins.

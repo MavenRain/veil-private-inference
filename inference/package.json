@@ -1,0 +1,19 @@
+{
+  "name": "@veil/private-inference",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "demo": "node test/demo.mjs",
+    "zk:setup": "node zk/setup.mjs",
+    "test:zk": "node --test zk/*.test.mjs",
+    "test:policy": "node --test deploy/appraisal.test.mjs"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7",
+    "snarkjs": "0.7.6"
+  }
+}

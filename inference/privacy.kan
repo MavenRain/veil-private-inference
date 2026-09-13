@@ -1,0 +1,19 @@
+-- Link after the receipt relation. Costs use integer milli-epsilon units.
+-- Authentication and commitment equality are host facts with explicit inputs.
+def federatedRoundCode (round expected party parties spent cost budget encrypted dp bound : Nat) : Nat :=
+  receiptFirstError (receiptRequire (natEq round expected) 1)
+  (receiptFirstError (receiptRequire (natLt 0 party) 2)
+  (receiptFirstError (receiptRequire (receiptLe party parties) 2)
+  (receiptFirstError (receiptRequire (natLt 0 cost) 3)
+  (receiptFirstError (receiptRequire (receiptLe (natAdd spent cost) budget) 3)
+  (receiptFirstError (receiptRequire (natEq encrypted 1) 4)
+  (receiptFirstError (receiptRequire (natEq dp 1) 5)
+    (receiptRequire (natEq bound 1) 6)))))))
+
+-- The BFV evaluator sums these squared integer differences over 1024 bits.
+-- The host validates bit encoding, dimensions and the plaintext modulus.
+def receiptBitDistance (a b : Nat) : Nat :=
+  natSub (natAdd a b) (natMul 2 (natMul a b))
+
+def encryptedDistanceTwin (distance : Nat) : Nat :=
+  receiptRequire (natEq distance 0) 1

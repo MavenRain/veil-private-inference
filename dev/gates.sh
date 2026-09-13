@@ -651,6 +651,8 @@ leg FAST FHC SELF zsh $SELF --leg fhc
 leg FAST MPC SELF zsh $SELF --leg mpc
 leg MED HOST SELF zsh $SELF --leg host
 leg MED HOST-NAT SELF zsh $SELF --leg host-nat
+leg MED PRIVATE-INFERENCE '^# fail 0$' \
+  node --test --test-reporter=tap $ROOT/dev/private-inference-test.mjs
 leg MED DENOMINATORS SELF zsh $SELF --leg denominators
 leg MED HOUSE '^HOUSE OK$' zsh $ROOT/dev/house.sh $ROOT
 leg FAST PIN SELF zsh $SELF --leg pin

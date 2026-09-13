@@ -1,0 +1,19 @@
+version = "0.1.0"
+algorithm = "sha384"
+
+[data]
+# genpolicy adds policy.rego. Do not deploy this input on its own.
+"aa.toml" = '''
+[token_configs.kbs]
+url = "https://kbs.example"
+cert = "REPLACE_WITH_TRUSTED_KBS_CERTIFICATE_PEM"
+'''
+"cdh.toml" = '''
+[kbc]
+name = "cc_kbc"
+url = "https://kbs.example"
+kbs_cert = "REPLACE_WITH_TRUSTED_KBS_CERTIFICATE_PEM"
+[image]
+authenticated_registry_credentials_uri = "kbs:///default/credentials/workload-registry"
+image_security_policy_uri = "kbs:///default/security-policy/veil-workload"
+'''

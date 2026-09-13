@@ -1,0 +1,5 @@
+-- Link after relation.kan. This specifies the conditional SZk relation.
+-- It is not a cryptographic proof system and does not certify the host's
+-- authentication bit. A future backend must bind authenticated evidence.
+def MockInferenceReceiptProof (x : ReceiptInstance) : Type 0 :=
+  zk (0 w : ReceiptEvidence) * receiptRelation x w

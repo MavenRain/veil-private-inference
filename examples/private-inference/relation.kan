@@ -1,0 +1,80 @@
+-- Fixed public relation for the mock inference receipt. No token parsing,
+-- hashing, signature verification, inference, or OS effects happen here.
+def ReceiptBool : Type 0 := sum ((prod () : Type 0), (prod () : Type 0))
+
+-- M, P, O. Digests are exact 256-bit naturals at the host boundary.
+def ReceiptFields : Type 0 := prod (Nat, Nat, Nat)
+-- Expected model, GPU measurement, workload measurement, runtime, max age.
+def ReceiptPolicy : Type 0 := prod (Nat, Nat, Nat, Nat, Nat)
+-- Relying-party challenge and current time in Unix seconds.
+def ReceiptContext : Type 0 := prod (Nat, Nat)
+def ReceiptInstance : Type 0 := prod (ReceiptFields, ReceiptPolicy, ReceiptContext)
+-- Measurement, challenge, attestation result, CC enabled, debug enabled.
+def GpuClaims : Type 0 := prod (Nat, Nat, Nat, Nat, Nat)
+-- M, P, O, G, workload measurement, challenge, runtime, completed,
+-- VM attested, VM confidential, VM debug enabled.
+-- These are mock workload claims, not claims supplied by NVIDIA GPU attestation.
+def WorkloadClaims : Type 0 := prod (Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat)
+-- Issued at, not before, expires at.
+def TokenLifetime : Type 0 := prod (Nat, Nat, Nat)
+-- Host authentication result, GPU claims, workload claims, lifetime.
+def ReceiptEvidence : Type 0 := prod (Nat, GpuClaims, WorkloadClaims, TokenLifetime)
+
+def receiptRequire (condition : ReceiptBool) (code : Nat) : Nat :=
+  case condition as b return Nat with
+  | 0 (f : prod ()) => code
+  | 1 (t : prod ()) => 0
+
+def receiptFirstError (first later : Nat) : Nat :=
+  case (natEq first 0) as b return Nat with
+  | 0 (f : prod ()) => first
+  | 1 (t : prod ()) => later
+
+def receiptLe (a b : Nat) : ReceiptBool := natEq (natSub a b) 0
+
+-- Zero is acceptance. Every nonzero result has a stable rejection name in
+-- host.mjs. Runtime 1 is NIM and runtime 2 is TensorRT-LLM.
+def receiptCode (x : ReceiptInstance) (w : ReceiptEvidence) : Nat :=
+  let r : ReceiptFields := x.0 in
+  let p : ReceiptPolicy := x.1 in
+  let c : ReceiptContext := x.2 in
+  let g : GpuClaims := w.1 in
+  let v : WorkloadClaims := w.2 in
+  let t : TokenLifetime := w.3 in
+  receiptFirstError (receiptRequire (natEq w.0 1) 1)
+  (receiptFirstError (receiptRequire (natEq g.2 1) 2)
+  (receiptFirstError (receiptRequire (natEq g.3 1) 3)
+  (receiptFirstError (receiptRequire (natEq g.4 0) 4)
+  (receiptFirstError (receiptRequire (natEq v.8 1) 21)
+  (receiptFirstError (receiptRequire (natEq v.9 1) 22)
+  (receiptFirstError (receiptRequire (natEq v.10 0) 23)
+  (receiptFirstError (receiptRequire (natEq v.7 1) 5)
+  (receiptFirstError (receiptRequire (natEq g.0 p.1) 6)
+  (receiptFirstError (receiptRequire (natEq v.3 g.0) 7)
+  (receiptFirstError (receiptRequire (natEq v.4 p.2) 8)
+  (receiptFirstError (receiptRequire (natEq v.6 p.3) 9)
+  (receiptFirstError (receiptRequire (natLt 0 v.6) 9)
+  (receiptFirstError (receiptRequire (receiptLe v.6 2) 9)
+  (receiptFirstError (receiptRequire (natEq r.0 p.0) 10)
+  (receiptFirstError (receiptRequire (natEq r.0 v.0) 11)
+  (receiptFirstError (receiptRequire (natEq r.1 v.1) 12)
+  (receiptFirstError (receiptRequire (natEq r.2 v.2) 13)
+  (receiptFirstError (receiptRequire (natEq g.1 c.0) 14)
+  (receiptFirstError (receiptRequire (natEq v.5 c.0) 15)
+  (receiptFirstError (receiptRequire (receiptLe t.0 t.1) 16)
+  (receiptFirstError (receiptRequire (natLt t.1 t.2) 16)
+  (receiptFirstError (receiptRequire (receiptLe t.0 c.1) 17)
+  (receiptFirstError (receiptRequire (receiptLe t.1 c.1) 18)
+  (receiptFirstError (receiptRequire (natLt c.1 t.2) 19)
+    (receiptRequire (receiptLe (natSub c.1 t.0) p.4) 20)))))))))))))))))))))))))
+
+def receiptHolds (x : ReceiptInstance) (w : ReceiptEvidence) : ReceiptBool :=
+  natEq (receiptCode x w) 0
+
+def receiptIsTrue (b : ReceiptBool) : Prop :=
+  case b as z return Prop with
+  | 0 (f : prod ()) => sum ()
+  | 1 (t : prod ()) => prod ()
+
+def receiptRelation (x : ReceiptInstance) (w : ReceiptEvidence) : Prop :=
+  receiptIsTrue (receiptHolds x w)

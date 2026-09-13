@@ -1,0 +1,39 @@
+{
+  "version": "veil.deployment.v2",
+  "name": "veil-inference",
+  "namespace": "veil",
+  "image": "REPLACE_WITH_APPROVED_WORKLOAD_IMAGE_AT_SHA256_DIGEST",
+  "attestation_egress_cidrs": ["192.0.2.1/32"],
+  "gateway_label": "veil-gateway",
+  "workload": {
+    "version": "veil.workload.v2",
+    "service": {
+      "version": "veil.runner-config.v2",
+      "listen": "0.0.0.0",
+      "port": 8081,
+      "model_root": "/opt/veil/model",
+      "manifest": "/opt/veil/model-manifest.json",
+      "backend_url": "http://127.0.0.1:8000/v1/chat/completions",
+      "runner": {
+        "audience": "veil-inference",
+        "model": "REPLACE_WITH_MODEL_MANIFEST_DIGEST",
+        "runtime": "nim",
+        "gpu_measurement": "REPLACE_WITH_APPROVED_GPU_CLAIM_BUNDLE_DIGEST",
+        "session_ttl": 600,
+        "max_sessions": 8
+      },
+      "attester": {
+        "nvattest": "/opt/nvat/bin/nvattest",
+        "evidence_getter": "/opt/nvat/bin/evidence_getter",
+        "cc_check": "/opt/nvat/bin/veil-gpu-cc-check",
+        "trustee_url": "https://trustee.example/attestation",
+        "policy_id": "veil-tdx-v2"
+      }
+    },
+    "backend_argv": ["/REPLACE_WITH_BAKED_BACKEND_EXECUTABLE", "REPLACE_WITH_FIXED_OFFLINE_MODEL_AND_LOOPBACK_ARGUMENTS"],
+    "backend_env": {"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"},
+    "ready_url": "http://127.0.0.1:8000/v1/health/ready",
+    "startup_timeout_seconds": 1200,
+    "mount_guest_configfs": true
+  }
+}

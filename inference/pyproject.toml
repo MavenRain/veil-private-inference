@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "veil-privacy-backends"
+version = "0.2.0"
+description = "Exact encrypted receipt checks and NVFlare protocol integration"
+requires-python = ">=3.13,<3.14"
+dependencies = ["tenseal==0.3.18", "nvflare==2.9.0", "numpy==2.4.3"]
+
+[project.scripts]
+veil-fhe = "veil_privacy.fhe:main"
+veil-federation = "veil_privacy.federation:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["veil_privacy"]
